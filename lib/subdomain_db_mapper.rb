@@ -1,0 +1,107 @@
+require "subdomain_db_mapper/version"
+require "active_record"
+#todo: put Controller and Database in files
+#require "subdomain_db_mapper/controller"
+module SubdomainDbMapper
+  class Error < StandardError; end
+
+  module Controller
+    extend ActiveSupport::Concern
+
+    included do
+      # anything you would want to do in every controller, for example: add a class attribute
+      class_attribute :class_attribute_available_on_every_controller, instance_writer: false
+    end
+
+    def self.included(klass)
+      klass.before_filter :check_authorization
+    end
+
+    # To be used as before_action.
+    # Will trigger check_authorization and DB change
+    def check_authorization
+      tenant = request.subdomains(0).first
+      SubdomainDbMapper::Database.switch(tenant) unless Rails.env.development? && tenant.blank? #in Gem and at beginning to set cookie secret
+      id = session[:id] || cookies.encrypted['id']
+      if id.blank?
+        redirect_to login_path, alert: "Erst einloggen"
+      else
+        @anbieter = User.find(id).anbieter#
+        if @anbieter.nil?
+          redirect_to new_user_path, :notice=>"Sie dürfen auf diese Funktion nicht zugreifen"
+        else
+          session[:id] = id.to_s # for missing session id
+          session[:user_id] = id.to_s # for sorcery login
+        end
+      end
+    end
+  end
+
+  class Database < ActiveRecord::Base
+
+    def self.change_db(tenant, env)
+      if env == 'development'
+        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)["educom"][env]
+      else
+        Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
+        Rails.application.config.secret_key_base = ENV["#{tenant}_KEY_BASE"]
+        db = {"adapter"=>"mysql2",
+              "encoding"=>"utf8",
+              "reconnect"=>false,
+              "pool"=>5,
+              "timeout"=>5000,
+              "port"=>3306,
+              "database"=> ENV["#{tenant}_DATABASE"],
+              "username"=> ENV["#{tenant}_USERNAME"],
+              "password"=> ENV["#{tenant}_PASSWORD"],
+              "host"=> ENV["#{tenant}_HOST"]}
+      end
+      ActiveRecord::Base.establish_connection(db) rescue nil
+    end
+
+    def self.switch(tenant)
+      tenant_connection = ActiveRecord::Base.connection_config[:database].try(:include?, subdomain_db_mappping(tenant))
+      tenant_thread = Thread.current[:subdomain] == tenant.parameterize
+      puts tenant_connection, Thread.current[:subdomain], (tenant_connection and tenant_thread)
+      env = ENV['RAILS_ENV'].nil? ? "development" : "production"
+      if not (tenant_connection and tenant_thread)
+        self.change_db(tenant.parameterize.upcase, env)
+        self.change_s3(tenant.parameterize) if defined?(Paperclip)
+        Thread.current[:subdomain] = tenant.parameterize
+      end
+    end
+
+    private
+    def self.subdomain_db_mappping(tenant)
+      if ENV['RAILS_ENV'] == 'production'
+        ENV["#{tenant}_DATABASE"]
+      else
+        "#{tenant}_development"
+      end
+    end
+
+    def self.change_s3(tenant)
+      Paperclip::Attachment.default_options.update({
+        storage: :s3,
+        s3_protocol: :https,
+        preserve_files: true,
+        s3_credentials: {
+            bucket: ENV["#{tenant}_FILES_BUCKET"],
+            access_key_id: ENV["#{tenant}_FILES_ACCESS_KEY_ID"],
+            secret_access_key: ENV["#{tenant}_FILES_SECRET_ACCESS_KEY"],
+            region: ENV["#{tenant}_FILES_REGION"],
+            s3_host_name: ENV["#{tenant}_FILES_HOST"]
+        },
+        s3_options: {
+            force_path_style: true
+        },
+        s3_region: region,
+        s3_headers: {
+          'Cache-Control' => 'max-age=3153600',
+          'Expires' => 2.years.from_now.httpdate
+        }
+      })
+    end
+  end
+
+end
