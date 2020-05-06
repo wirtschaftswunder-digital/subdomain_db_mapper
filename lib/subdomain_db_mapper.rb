@@ -41,7 +41,7 @@ module SubdomainDbMapper
 
     def self.change_db(tenant, env)
       if env == 'development'
-        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)["educom"][env]
+        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase][env]
       else
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
         Rails.application.config.secret_key_base = ENV["#{tenant}_KEY_BASE"]
@@ -60,14 +60,15 @@ module SubdomainDbMapper
     end
 
     def self.switch(tenant)
+      tenant = tenant.parameterize.upcase
       tenant_connection = ActiveRecord::Base.connection_config[:database].try(:include?, subdomain_db_mappping(tenant))
-      tenant_thread = Thread.current[:subdomain] == tenant.parameterize
+      tenant_thread = Thread.current[:subdomain] == tenant
       puts tenant_connection, Thread.current[:subdomain], (tenant_connection and tenant_thread)
       env = ENV['RAILS_ENV'].nil? ? "development" : "production"
       if not (tenant_connection and tenant_thread)
-        self.change_db(tenant.parameterize.upcase, env)
-        self.change_s3(tenant.parameterize) if defined?(Paperclip)
-        Thread.current[:subdomain] = tenant.parameterize
+        self.change_db(tenant, env)
+        self.change_s3(tenant) if defined?(Paperclip)
+        Thread.current[:subdomain] = tenant
       end
     end
 
@@ -76,7 +77,7 @@ module SubdomainDbMapper
       if ENV['RAILS_ENV'] == 'production'
         ENV["#{tenant}_DATABASE"]
       else
-        "#{tenant}_development"
+        "#{tenant.downcase}_development"
       end
     end
 
@@ -95,7 +96,7 @@ module SubdomainDbMapper
         s3_options: {
             force_path_style: true
         },
-        s3_region: region,
+        s3_region: ENV["#{tenant}_FILES_REGION"],
         s3_headers: {
           'Cache-Control' => 'max-age=3153600',
           'Expires' => 2.years.from_now.httpdate
