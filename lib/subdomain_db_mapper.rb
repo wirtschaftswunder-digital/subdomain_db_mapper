@@ -61,7 +61,7 @@ module SubdomainDbMapper
 
     def self.switch(tenant)
       tenant = tenant.parameterize.upcase
-      load_tenant_vars if ENV["#{tenant}_DATABASE"].blank?
+      load_tenant_vars(tenant) if ENV["#{tenant}_DATABASE"].blank?
       tenant_connection = ActiveRecord::Base.connection_config[:database].try(:include?, subdomain_db_mappping(tenant))
       tenant_thread = Thread.current[:subdomain] == tenant
       puts tenant_connection, Thread.current[:subdomain], (tenant_connection and tenant_thread)
