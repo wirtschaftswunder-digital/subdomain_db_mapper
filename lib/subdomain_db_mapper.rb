@@ -61,6 +61,7 @@ module SubdomainDbMapper
 
     def self.switch(tenant)
       tenant = tenant.parameterize.upcase
+      load_tenant_vars if ENV["#{tenant}_DATABASE"].blank?
       tenant_connection = ActiveRecord::Base.connection_config[:database].try(:include?, subdomain_db_mappping(tenant))
       tenant_thread = Thread.current[:subdomain] == tenant
       puts tenant_connection, Thread.current[:subdomain], (tenant_connection and tenant_thread)
@@ -74,11 +75,23 @@ module SubdomainDbMapper
 
     private
     def self.subdomain_db_mappping(tenant)
-      if ENV['RAILS_ENV'] == 'production'
+      if Rails.env.production?
         ENV["#{tenant}_DATABASE"]
       else
         "#{tenant.downcase}_development"
       end
+    end
+
+    def load_env_vars
+      ENV["#{tenant}_DATABASE"] = %x[echo $#{tenant}_DATABASE][0..-2]
+      ENV["#{tenant}_USERNAME"] = %x[echo $#{tenant}_USERNAME][0..-2]
+      ENV["#{tenant}_PASSWORD"] = %x[echo $#{tenant}_PASSWORD][0..-2]
+      ENV["#{tenant}_HOST"] = %x[echo $#{tenant}_HOST][0..-2]
+      ENV["#{tenant}_FILES_BUCKET"] = %x[echo $#{tenant}_FILES_BUCKET][0..-2]
+      ENV["#{tenant}_FILES_ACCESS_KEY_ID"]= %x[echo $#{tenant}_FILES_ACCESS_KEY_ID][0..-2]
+      ENV["#{tenant}_FILES_SECRET_ACCESS_KEY"] = %x[echo $#{tenant}_FILES_SECRET_ACCESS_KEY][0..-2]
+      ENV["#{tenant}_FILES_REGION"] = %x[echo $#{tenant}_FILES_REGION][0..-2]
+      ENV["#{tenant}_FILES_HOST"] = %x[echo $#{tenant}_FILES_HOST][0..-2]
     end
 
     def self.change_s3(tenant)
