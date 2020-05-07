@@ -26,7 +26,7 @@ module SubdomainDbMapper
       if id.blank?
         redirect_to login_path, alert: "Erst einloggen"
       else
-        @anbieter = User.find(id).anbieter#
+        @anbieter = User.find(id).anbieter
         if @anbieter.nil?
           redirect_to new_user_path, :notice=>"Sie dürfen auf diese Funktion nicht zugreifen"
         else
@@ -56,7 +56,7 @@ module SubdomainDbMapper
               "password"=> ENV["#{tenant}_PASSWORD"],
               "host"=> ENV["#{tenant}_HOST"]}
       end
-      ActiveRecord::Base.establish_connection(db) rescue nil
+      ActiveRecord::Base.establish_connection(db)# rescue nil
     end
 
     def self.switch(tenant)
@@ -64,13 +64,14 @@ module SubdomainDbMapper
       load_tenant_vars(tenant) if ENV["#{tenant}_DATABASE"].blank?
       tenant_connection = ActiveRecord::Base.connection_config[:database].try(:include?, subdomain_db_mappping(tenant))
       tenant_thread = Thread.current[:subdomain] == tenant
-      puts tenant_connection, Thread.current[:subdomain], (tenant_connection and tenant_thread)
-      env = ENV['RAILS_ENV'].nil? ? "development" : "production"
+      env = Rails.env.production? ? "production" : "development"
       if not (tenant_connection and tenant_thread)
         self.change_db(tenant, env)
         self.change_s3(tenant) if defined?(Paperclip)
         Thread.current[:subdomain] = tenant
       end
+      logger.debug(Thread.current[:subdomain])
+      logger.debug(ActiveRecord::Base.connection_config[:database])
     end
 
     private
