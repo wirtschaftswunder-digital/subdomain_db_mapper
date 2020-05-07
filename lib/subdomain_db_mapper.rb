@@ -82,7 +82,7 @@ module SubdomainDbMapper
       end
     end
 
-    def load_env_vars
+    def self.load_env_vars(tenant)
       ENV["#{tenant}_DATABASE"] = %x[echo $#{tenant}_DATABASE][0..-2]
       ENV["#{tenant}_USERNAME"] = %x[echo $#{tenant}_USERNAME][0..-2]
       ENV["#{tenant}_PASSWORD"] = %x[echo $#{tenant}_PASSWORD][0..-2]
