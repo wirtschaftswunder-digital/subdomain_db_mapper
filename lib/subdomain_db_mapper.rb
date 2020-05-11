@@ -93,7 +93,7 @@ module SubdomainDbMapper
         preserve_files: true,
         s3_credentials: {
             bucket: `cat /home/app/webapp/config/env/#{tenant}_FILES_BUCKET]`,
-            access_key_id: `cat /home/app/webapp/config/env/#{tenant}_FILES_ACCESS_KEY_ID]`
+            access_key_id: `cat /home/app/webapp/config/env/#{tenant}_FILES_ACCESS_KEY_ID]`,
             secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_FILES_SECRET_ACCESS_KEY]`,
             region: `cat /home/app/webapp/config/env/#{tenant}_FILES_REGION]`,
             s3_host_name: `cat /home/app/webapp/config/env/#{tenant}_FILES_HOST]`
