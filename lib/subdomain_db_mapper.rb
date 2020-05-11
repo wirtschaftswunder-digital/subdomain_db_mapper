@@ -14,14 +14,18 @@ module SubdomainDbMapper
     end
 
     def self.included(klass)
+      klass.before_filter :change_db
       klass.before_filter :check_authorization
+    end
+
+    def change_db
+      tenant = request.subdomains(0).first
+      SubdomainDbMapper::Database.switch(tenant) unless Rails.env.development? && tenant.blank?
     end
 
     # To be used as before_action.
     # Will trigger check_authorization and DB change
     def check_authorization
-      tenant = request.subdomains(0).first
-      SubdomainDbMapper::Database.switch(tenant) unless Rails.env.development? && tenant.blank? #in Gem and at beginning to set cookie secret
       id = session[:id] || cookies.encrypted['id']
       if id.blank?
         redirect_to login_path, alert: "Erst einloggen"
@@ -39,29 +43,8 @@ module SubdomainDbMapper
 
   class Database < ActiveRecord::Base
 
-    def self.change_db(tenant, env)
-      if env == 'development'
-        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase][env]
-      else
-        Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
-        Rails.application.config.secret_key_base = ENV["#{tenant}_KEY_BASE"]
-        db = {"adapter"=>"mysql2",
-              "encoding"=>"utf8",
-              "reconnect"=>false,
-              "pool"=>5,
-              "timeout"=>5000,
-              "port"=>3306,
-              "database"=> ENV["#{tenant}_DATABASE"],
-              "username"=> ENV["#{tenant}_USERNAME"],
-              "password"=> ENV["#{tenant}_PASSWORD"],
-              "host"=> ENV["#{tenant}_HOST"]}
-      end
-      ActiveRecord::Base.establish_connection(db)# rescue nil
-    end
-
     def self.switch(tenant)
       tenant = tenant.parameterize.upcase
-      load_tenant_vars(tenant) if ENV["#{tenant}_DATABASE"].blank?
       tenant_connection = ActiveRecord::Base.connection_config[:database].try(:include?, subdomain_db_mappping(tenant))
       tenant_thread = Thread.current[:subdomain] == tenant
       env = Rails.env.production? ? "production" : "development"
@@ -77,22 +60,30 @@ module SubdomainDbMapper
     private
     def self.subdomain_db_mappping(tenant)
       if Rails.env.production?
-        ENV["#{tenant}_DATABASE"]
+        `cat /home/app/webapp/config/env/#{tenant}_DATABASE]`
       else
         "#{tenant.downcase}_development"
       end
     end
 
-    def self.load_tenant_vars(tenant)
-      ENV["#{tenant}_DATABASE"] = %x[echo $#{tenant}_DATABASE][0..-2]
-      ENV["#{tenant}_USERNAME"] = %x[echo $#{tenant}_USERNAME][0..-2]
-      ENV["#{tenant}_PASSWORD"] = %x[echo $#{tenant}_PASSWORD][0..-2]
-      ENV["#{tenant}_HOST"] = %x[echo $#{tenant}_HOST][0..-2]
-      ENV["#{tenant}_FILES_BUCKET"] = %x[echo $#{tenant}_FILES_BUCKET][0..-2]
-      ENV["#{tenant}_FILES_ACCESS_KEY_ID"]= %x[echo $#{tenant}_FILES_ACCESS_KEY_ID][0..-2]
-      ENV["#{tenant}_FILES_SECRET_ACCESS_KEY"] = %x[echo $#{tenant}_FILES_SECRET_ACCESS_KEY][0..-2]
-      ENV["#{tenant}_FILES_REGION"] = %x[echo $#{tenant}_FILES_REGION][0..-2]
-      ENV["#{tenant}_FILES_HOST"] = %x[echo $#{tenant}_FILES_HOST][0..-2]
+    def self.change_db(tenant, env)
+      if env == 'development'
+        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase][env]
+      else
+        Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
+        Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE]`
+        db = {"adapter"=>"mysql2",
+              "encoding"=>"utf8",
+              "reconnect"=>false,
+              "pool"=>5,
+              "timeout"=>5000,
+              "port"=>3306,
+              "database"=> `cat /home/app/webapp/config/env/#{tenant}_DATABASE]`,
+              "username"=> `cat /home/app/webapp/config/env/#{tenant}_USERNAME]`,
+              "password"=> `cat /home/app/webapp/config/env/#{tenant}_PASSWORD]`,
+              "host"=> `cat /home/app/webapp/config/env/#{tenant}_HOST]`}
+      end
+      ActiveRecord::Base.establish_connection(db)# rescue nil
     end
 
     def self.change_s3(tenant)
@@ -101,16 +92,16 @@ module SubdomainDbMapper
         s3_protocol: :https,
         preserve_files: true,
         s3_credentials: {
-            bucket: ENV["#{tenant}_FILES_BUCKET"],
-            access_key_id: ENV["#{tenant}_FILES_ACCESS_KEY_ID"],
-            secret_access_key: ENV["#{tenant}_FILES_SECRET_ACCESS_KEY"],
-            region: ENV["#{tenant}_FILES_REGION"],
-            s3_host_name: ENV["#{tenant}_FILES_HOST"]
+            bucket: `cat /home/app/webapp/config/env/#{tenant}_FILES_BUCKET]`,
+            access_key_id: `cat /home/app/webapp/config/env/#{tenant}_FILES_ACCESS_KEY_ID]`
+            secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_FILES_SECRET_ACCESS_KEY]`,
+            region: `cat /home/app/webapp/config/env/#{tenant}_FILES_REGION]`,
+            s3_host_name: `cat /home/app/webapp/config/env/#{tenant}_FILES_HOST]`
         },
         s3_options: {
             force_path_style: true
         },
-        s3_region: ENV["#{tenant}_FILES_REGION"],
+        s3_region: `cat /home/app/webapp/config/env/#{tenant}_FILES_REGION]`,
         s3_headers: {
           'Cache-Control' => 'max-age=3153600',
           'Expires' => 2.years.from_now.httpdate
