@@ -60,7 +60,7 @@ module SubdomainDbMapper
     private
     def self.subdomain_db_mappping(tenant)
       if Rails.env.production?
-        `cat /home/app/webapp/config/env/#{tenant}_DATABASE]`
+        `cat /home/app/webapp/config/env/#{tenant}_DATABASE`
       else
         "#{tenant.downcase}_development"
       end
@@ -71,17 +71,17 @@ module SubdomainDbMapper
         db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase][env]
       else
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
-        Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE]`
+        Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
         db = {"adapter"=>"mysql2",
               "encoding"=>"utf8",
               "reconnect"=>false,
               "pool"=>5,
               "timeout"=>5000,
               "port"=>3306,
-              "database"=> `cat /home/app/webapp/config/env/#{tenant}_DATABASE]`,
-              "username"=> `cat /home/app/webapp/config/env/#{tenant}_USERNAME]`,
-              "password"=> `cat /home/app/webapp/config/env/#{tenant}_PASSWORD]`,
-              "host"=> `cat /home/app/webapp/config/env/#{tenant}_HOST]`}
+              "database"=> `cat /home/app/webapp/config/env/#{tenant}_DATABASE`,
+              "username"=> `cat /home/app/webapp/config/env/#{tenant}_USERNAME`,
+              "password"=> `cat /home/app/webapp/config/env/#{tenant}_PASSWORD`,
+              "host"=> `cat /home/app/webapp/config/env/#{tenant}_HOST`}
       end
       ActiveRecord::Base.establish_connection(db)# rescue nil
     end
@@ -92,16 +92,16 @@ module SubdomainDbMapper
         s3_protocol: :https,
         preserve_files: true,
         s3_credentials: {
-            bucket: `cat /home/app/webapp/config/env/#{tenant}_FILES_BUCKET]`,
-            access_key_id: `cat /home/app/webapp/config/env/#{tenant}_FILES_ACCESS_KEY_ID]`,
-            secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_FILES_SECRET_ACCESS_KEY]`,
-            region: `cat /home/app/webapp/config/env/#{tenant}_FILES_REGION]`,
-            s3_host_name: `cat /home/app/webapp/config/env/#{tenant}_FILES_HOST]`
+            bucket: `cat /home/app/webapp/config/env/#{tenant}_FILES_BUCKET`,
+            access_key_id: `cat /home/app/webapp/config/env/#{tenant}_FILES_ACCESS_KEY_ID`,
+            secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_FILES_SECRET_ACCESS_KEY`,
+            region: `cat /home/app/webapp/config/env/#{tenant}_FILES_REGION`,
+            s3_host_name: `cat /home/app/webapp/config/env/#{tenant}_FILES_HOST`
         },
         s3_options: {
             force_path_style: true
         },
-        s3_region: `cat /home/app/webapp/config/env/#{tenant}_FILES_REGION]`,
+        s3_region: `cat /home/app/webapp/config/env/#{tenant}_FILES_REGION`,
         s3_headers: {
           'Cache-Control' => 'max-age=3153600',
           'Expires' => 2.years.from_now.httpdate
