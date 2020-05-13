@@ -14,8 +14,8 @@ module SubdomainDbMapper
     end
 
     def self.included(klass)
-      klass.before_filter :change_db
-      klass.before_filter :check_authorization
+      klass.before_action :change_db
+      klass.before_action :check_authorization
     end
 
     def change_db
