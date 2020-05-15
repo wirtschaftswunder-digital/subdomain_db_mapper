@@ -34,6 +34,7 @@ module SubdomainDbMapper
         if @anbieter.nil?
           redirect_to new_user_path, :notice=>"Sie dürfen auf diese Funktion nicht zugreifen"
         else
+          Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
           session[:id] = id.to_s # for missing session id
           session[:user_id] = id.to_s # for sorcery login
         end
