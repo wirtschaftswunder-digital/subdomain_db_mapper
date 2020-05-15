@@ -35,6 +35,7 @@ module SubdomainDbMapper
           redirect_to new_user_path, :notice=>"Sie dürfen auf diese Funktion nicht zugreifen"
         else
           Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
+          tenant = request.subdomains(0).first.parameterize.upcase
           ENV['CRYPT_KEEPER_KEY'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_KEY`
           ENV['CRYPT_KEEPER_SALT'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_SALT`
           session[:id] = id.to_s # for missing session id
