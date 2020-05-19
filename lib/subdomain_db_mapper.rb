@@ -34,7 +34,11 @@ module SubdomainDbMapper
         if @anbieter.nil?
           redirect_to new_user_path, :notice=>"Sie dürfen auf diese Funktion nicht zugreifen"
         else
-          Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
+          if Masken.present?
+            ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
+          else
+            Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
+          end
           set_cryptkeeper
           session[:id] = id.to_s # for missing session id
           session[:user_id] = id.to_s # for sorcery login
