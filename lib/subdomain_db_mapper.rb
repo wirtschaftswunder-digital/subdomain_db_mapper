@@ -28,7 +28,7 @@ module SubdomainDbMapper
     def check_authorization
       id = session[:id] || cookies.encrypted['id']
       if id.blank?
-        redirect_to login_path, alert: "Erst einloggen"
+        not_authenticated unless Anbieter.find_by_key(params[:key]).present? #API requests
       else
         @anbieter = User.find(id).anbieter
         if @anbieter.nil?
@@ -43,6 +43,10 @@ module SubdomainDbMapper
     end
 
     private
+    def not_authenticated
+      redirect_to login_path, alert: "Erst einloggen"
+    end
+
     def set_cryptkeeper
       if request.subdomains.present?
         tenant = request.subdomains(0).first.parameterize.upcase
@@ -61,6 +65,7 @@ module SubdomainDbMapper
       env = Rails.env.production? ? "production" : "development"
       if not (tenant_connection and tenant_thread)
         self.change_db(tenant, env)
+        # todo check if better here or in app > self.change_db_kc(tenant) if defined?(KundencenterBase)
         self.change_s3(tenant) if defined?(Paperclip)
         Thread.current[:subdomain] = tenant
       end
