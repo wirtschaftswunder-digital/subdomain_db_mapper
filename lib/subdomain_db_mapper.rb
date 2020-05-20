@@ -21,6 +21,11 @@ module SubdomainDbMapper
     def change_db
       tenant = request.subdomains(0).first
       SubdomainDbMapper::Database.switch(tenant) unless Rails.env.development? && tenant.blank?
+      if Masken.present? && request.subdomains.present?
+        ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
+      elsif request.subdomains.present?
+        Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
+      end
     end
 
     def check_authorization
@@ -85,12 +90,10 @@ module SubdomainDbMapper
         Rails.application.config.secret_key_base = "fake_dev_secret_#{tenant}"
       else
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
-        if Masken.present? && request.subdomains.present?
+        if Masken.present?
           Masken::Application.config.secret_token = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
-          ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
-        elsif request.subdomains.present?
+        else
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
-          Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
         end
         db = {"adapter"=>"mysql2",
               "encoding"=>"utf8",
