@@ -26,7 +26,7 @@ module SubdomainDbMapper
     # To be used as before_action.
     # Will trigger check_authorization and DB change
     def check_authorization
-      id = session[:id] || cookies.encrypted['id']
+      id = session[:id] || (cookies.encrypted['id'] unless Masken.present?)
       if id.blank?
         not_authenticated unless Anbieter.find_by_key(params[:key]).present? #API requests
       else
