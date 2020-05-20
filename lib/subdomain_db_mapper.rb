@@ -21,7 +21,7 @@ module SubdomainDbMapper
     def change_db
       tenant = request.subdomains(0).first
       SubdomainDbMapper::Database.switch(tenant) unless Rails.env.development? && tenant.blank?
-      if Masken.present? && request.subdomains.present?
+      if defined?(Masken) && request.subdomains.present?
         ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
       elsif request.subdomains.present?
         Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
@@ -29,7 +29,7 @@ module SubdomainDbMapper
     end
 
     def check_authorization
-      id = session[:id] || (cookies.encrypted['id'] unless Masken.present?)
+      id = session[:id] || (cookies.encrypted['id'] unless defined?(Masken))
       if id.blank?
         not_authenticated unless Anbieter.find_by_key(params[:key]).present? #API requests
       else
@@ -90,7 +90,7 @@ module SubdomainDbMapper
         Rails.application.config.secret_key_base = "fake_dev_secret_#{tenant}"
       else
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
-        if Masken.present?
+        if defined?(Masken)
           Masken::Application.config.secret_token = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
         else
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
