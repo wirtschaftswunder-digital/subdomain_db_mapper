@@ -24,11 +24,6 @@ module SubdomainDbMapper
     end
 
     def check_authorization
-      if Masken.present? && request.subdomains.present?
-        ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
-      elsif request.subdomains.present?
-        Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
-      end
       id = session[:id] || (cookies.encrypted['id'] unless Masken.present?)
       if id.blank?
         not_authenticated unless Anbieter.find_by_key(params[:key]).present? #API requests
@@ -90,7 +85,13 @@ module SubdomainDbMapper
         Rails.application.config.secret_key_base = "fake_dev_secret_#{tenant}"
       else
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
-        Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
+        if Masken.present? && request.subdomains.present?
+          Masken::Application.config.secret_token = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
+          ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
+        elsif request.subdomains.present?
+          Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
+          Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
+        end
         db = {"adapter"=>"mysql2",
               "encoding"=>"utf8",
               "reconnect"=>false,
