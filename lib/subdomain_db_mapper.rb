@@ -23,9 +23,12 @@ module SubdomainDbMapper
       SubdomainDbMapper::Database.switch(tenant) unless Rails.env.development? && tenant.blank?
     end
 
-    # To be used as before_action.
-    # Will trigger check_authorization and DB change
     def check_authorization
+      if Masken.present? && request.subdomains.present?
+        ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
+      elsif request.subdomains.present?
+        Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
+      end
       id = session[:id] || (cookies.encrypted['id'] unless Masken.present?)
       if id.blank?
         not_authenticated unless Anbieter.find_by_key(params[:key]).present? #API requests
@@ -34,11 +37,6 @@ module SubdomainDbMapper
         if @anbieter.nil?
           redirect_to new_user_path, :notice=>"Sie dürfen auf diese Funktion nicht zugreifen"
         else
-          if Masken.present?
-            ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
-          else
-            Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
-          end
           set_cryptkeeper
           session[:id] = id.to_s # for missing session id
           session[:user_id] = id.to_s # for sorcery login
