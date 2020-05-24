@@ -67,7 +67,7 @@ module SubdomainDbMapper
       env = Rails.env.production? ? "production" : "development"
       if not (tenant_connection and tenant_thread)
         self.change_db(tenant, env)
-        self.change_db_kc(tenant, env) if defined?(KundencenterBase)
+        self.change_db_kc(tenant) if defined?(KundencenterBase)
         self.change_s3(tenant) if defined?(Paperclip)
         Thread.current[:subdomain] = tenant
       end
@@ -109,9 +109,9 @@ module SubdomainDbMapper
       ActiveRecord::Base.establish_connection(db)# rescue nil
     end
 
-    def self.change_db_kc(tenant, env)
+    def self.change_db_kc(tenant)
       if Rails.env.development?
-        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)["#{Thread.current[:subdomain].downcase}_db_org"]["development"]
+        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)["#{tenant.downcase}_db_org"]["development"]
       else
         db = {"adapter"=>"mysql2",
               "encoding"=>"utf8",
@@ -119,10 +119,10 @@ module SubdomainDbMapper
               "pool"=>5,
               "timeout"=>5000,
               "port"=>3306,
-              "database"=> `cat /home/app/webapp/config/env/#{Thread.current[:subdomain]}_KUNDENCENTER_DATABASE`,
-              "username"=> `cat /home/app/webapp/config/env/#{Thread.current[:subdomain]}_KUNDENCENTER_USERNAME`,
-              "password"=> `cat /home/app/webapp/config/env/#{Thread.current[:subdomain]}_KUNDENCENTER_PASSWORD`,
-              "host"=> `cat /home/app/webapp/config/env/#{Thread.current[:subdomain]}_KUNDENCENTER_HOST`}
+              "database"=> `cat /home/app/webapp/config/env/#{tenant}_KUNDENCENTER_DATABASE`,
+              "username"=> `cat /home/app/webapp/config/env/#{tenant}_KUNDENCENTER_USERNAME`,
+              "password"=> `cat /home/app/webapp/config/env/#{tenant}_KUNDENCENTER_PASSWORD`,
+              "host"=> `cat /home/app/webapp/config/env/#{tenant}_KUNDENCENTER_HOST`}
       end
       KundencenterBase.establish_connection db
     end
