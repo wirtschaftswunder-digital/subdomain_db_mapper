@@ -67,7 +67,7 @@ module SubdomainDbMapper
       env = Rails.env.production? ? "production" : "development"
       if not (tenant_connection and tenant_thread)
         self.change_db(tenant, env)
-        self.change_db_kc(tenant) if defined?(KundencenterBase)
+        self.change_db_kc(tenant)
         self.change_s3(tenant) if defined?(Paperclip)
         Thread.current[:subdomain] = tenant
       end
@@ -124,7 +124,11 @@ module SubdomainDbMapper
               "password"=> `cat /home/app/webapp/config/env/#{tenant}_KUNDENCENTER_PASSWORD`,
               "host"=> `cat /home/app/webapp/config/env/#{tenant}_KUNDENCENTER_HOST`}
       end
-      KundencenterBase.establish_connection db
+      if defined?(Masken)
+        MultiTenant::KundencenterBase.establish_connection db
+      else
+        KundencenterBase.establish_connection db if defined?(KundencenterBase)
+      end
     end
 
     def self.change_s3(tenant)
