@@ -167,7 +167,7 @@ module SubdomainDbMapper
                 "password"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_PASSWORD`,
                 "host"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_HOST`}
         end
-        TeamerBase.establish_connection(db)
+        ApplicationRecord.establish_connection(db)
       end
     end
 
