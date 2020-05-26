@@ -66,9 +66,10 @@ module SubdomainDbMapper
       tenant_thread = Thread.current[:subdomain] == tenant
       env = Rails.env.production? ? "production" : "development"
       if not (tenant_connection and tenant_thread)
+        self.change_session(tenant)
         self.change_db(tenant, env)
         self.change_db_kc(tenant)
-        #change teamer_db
+        self.change_db_teamer(tenant)
         self.change_s3(tenant) if defined?(Paperclip)
         Thread.current[:subdomain] = tenant
       end
@@ -85,9 +86,8 @@ module SubdomainDbMapper
       end
     end
 
-    def self.change_db(tenant, env)
+    def self.change_session(tenant)
       if env == 'development'
-        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase][env]
         Rails.application.config.secret_key_base = "fake_dev_secret_#{tenant}"
       else
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
@@ -105,6 +105,13 @@ module SubdomainDbMapper
         else
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
         end
+      end
+    end
+
+    def self.change_db(tenant, env)
+      if env == 'development'
+        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase][env]
+      else
         db = {"adapter"=>"mysql2",
               "encoding"=>"utf8",
               "reconnect"=>false,
@@ -116,7 +123,11 @@ module SubdomainDbMapper
               "password"=> `cat /home/app/webapp/config/env/#{tenant}_PASSWORD`,
               "host"=> `cat /home/app/webapp/config/env/#{tenant}_HOST`}
       end
-      ActiveRecord::Base.establish_connection(db)# rescue nil
+      if defined?(JugendreisenBase)
+        JugendreisenBase.establish_connection(db)
+      else
+        ActiveRecord::Base.establish_connection(db)
+      end
     end
 
     def self.change_db_kc(tenant)
@@ -138,6 +149,26 @@ module SubdomainDbMapper
         MultiTenant::KundencenterBase.establish_connection db
       else
         KundencenterBase.establish_connection db if defined?(KundencenterBase)
+      end
+    end
+
+    def self.change_db_teamer(tenant, env)
+      if defined?(TeamerBase)
+        if env == 'development'
+          db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase][env]
+        else
+          db = {"adapter"=>"mysql2",
+                "encoding"=>"utf8",
+                "reconnect"=>false,
+                "pool"=>5,
+                "timeout"=>5000,
+                "port"=>3306,
+                "database"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_DATABASE`,
+                "username"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_USERNAME`,
+                "password"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_PASSWORD`,
+                "host"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_HOST`}
+        end
+        TeamerBase.establish_connection(db)
       end
     end
 
