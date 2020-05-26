@@ -64,10 +64,9 @@ module SubdomainDbMapper
       tenant = tenant.parameterize.upcase
       tenant_connection = ActiveRecord::Base.connection_config[:database].try(:include?, subdomain_db_mappping(tenant))
       tenant_thread = Thread.current[:subdomain] == tenant
-      env = Rails.env.production? ? "production" : "development"
       if not (tenant_connection and tenant_thread)
         self.change_session(tenant)
-        self.change_db(tenant, env)
+        self.change_db(tenant)
         self.change_db_kc(tenant)
         self.change_db_teamer(tenant)
         self.change_s3(tenant) if defined?(Paperclip)
@@ -87,7 +86,7 @@ module SubdomainDbMapper
     end
 
     def self.change_session(tenant)
-      if env == 'development'
+      if Rails.env.development?
         Rails.application.config.secret_key_base = "fake_dev_secret_#{tenant}"
       else
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
@@ -108,9 +107,9 @@ module SubdomainDbMapper
       end
     end
 
-    def self.change_db(tenant, env)
-      if env == 'development'
-        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase][env]
+    def self.change_db(tenant)
+      if Rails.env.development?
+        db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase]['development']
       else
         db = {"adapter"=>"mysql2",
               "encoding"=>"utf8",
@@ -152,10 +151,10 @@ module SubdomainDbMapper
       end
     end
 
-    def self.change_db_teamer(tenant, env)
+    def self.change_db_teamer(tenant)
       if defined?(TeamerBase)
-        if env == 'development'
-          db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase][env]
+        if Rails.env.development?
+          db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase]['development']
         else
           db = {"adapter"=>"mysql2",
                 "encoding"=>"utf8",
