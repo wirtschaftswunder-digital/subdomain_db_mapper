@@ -93,13 +93,13 @@ module SubdomainDbMapper
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
         if defined?(Masken)
           Masken::Application.config.secret_token = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
-        if defined?(FrontendAgencyApp)
+        elsif defined?(FrontendAgencyApp)
           Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_fe_agency_session', tld_length: 2, secure: true
           Rails.application.config.secret_key_bas = `cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`
-        if defined?(TeamerApp)
+        elsif defined?(TeamerApp)
           Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_teamer_session', tld_length: 2, secure: true
           Rails.application.config.secret_key_bas = `cat /home/app/webapp/config/env/#{tenant}_TEAMER_KEY_BASE`
-        if defined?(Kundencenter)
+        elsif defined?(Kundencenter)
           Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_customer_session', tld_length: 2, secure: true
           Rails.application.config.secret_key_bas = `cat /home/app/webapp/config/env/#{tenant}_CUSTOMER_KEY_BASE`
         else
