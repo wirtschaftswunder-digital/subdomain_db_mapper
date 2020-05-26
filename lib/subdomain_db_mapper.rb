@@ -68,6 +68,7 @@ module SubdomainDbMapper
       if not (tenant_connection and tenant_thread)
         self.change_db(tenant, env)
         self.change_db_kc(tenant)
+        #change teamer_db
         self.change_s3(tenant) if defined?(Paperclip)
         Thread.current[:subdomain] = tenant
       end
@@ -92,6 +93,15 @@ module SubdomainDbMapper
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
         if defined?(Masken)
           Masken::Application.config.secret_token = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
+        if defined?(FrontendAgencyApp)
+          Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_fe_agency_session', tld_length: 2, secure: true
+          Rails.application.config.secret_key_bas = `cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`
+        if defined?(TeamerApp)
+          Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_teamer_session', tld_length: 2, secure: true
+          Rails.application.config.secret_key_bas = `cat /home/app/webapp/config/env/#{tenant}_TEAMER_KEY_BASE`
+        if defined?(Kundencenter)
+          Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_customer_session', tld_length: 2, secure: true
+          Rails.application.config.secret_key_bas = `cat /home/app/webapp/config/env/#{tenant}_CUSTOMER_KEY_BASE`
         else
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
         end
