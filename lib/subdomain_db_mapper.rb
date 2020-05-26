@@ -19,7 +19,7 @@ module SubdomainDbMapper
     end
 
     def change_db
-      tenant = request.subdomains(0).first
+      tenant = request.subdomains(0).first.encode("UTF-8")
       SubdomainDbMapper::Database.switch(tenant) unless Rails.env.development? && tenant.blank?
       if defined?(Masken) && request.subdomains.present?
         ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
