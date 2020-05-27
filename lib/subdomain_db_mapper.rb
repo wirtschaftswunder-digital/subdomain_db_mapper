@@ -154,7 +154,7 @@ module SubdomainDbMapper
     def self.change_db_teamer(tenant)
       if defined?(TeamerBase)
         if Rails.env.development?
-          db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase]['development']
+          db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)["#{tenant.downcase}_db_teamer"]['development']
         else
           db = {"adapter"=>"mysql2",
                 "encoding"=>"utf8",
