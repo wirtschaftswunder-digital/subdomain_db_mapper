@@ -51,7 +51,7 @@ module SubdomainDbMapper
 
     def set_cryptkeeper
       if request.subdomains.present?
-        tenant = request.subdomains(0).first.encode("UTF-8").parameterize.upcase
+        tenant = request.subdomains(0).first.force_encode("UTF-8").parameterize.upcase
         ENV['CRYPT_KEEPER_KEY'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_KEY`
         ENV['CRYPT_KEEPER_SALT'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_SALT`
       end
@@ -61,7 +61,7 @@ module SubdomainDbMapper
   class Database < ActiveRecord::Base
 
     def self.switch(tenant)
-      tenant = tenant.encode("UTF-8").parameterize.upcase
+      tenant = tenant.force_encode("UTF-8").parameterize.upcase
       tenant_connection = ActiveRecord::Base.connection_config[:database].try(:include?, subdomain_db_mappping(tenant))
       tenant_thread = Thread.current[:subdomain] == tenant
       if not (tenant_connection and tenant_thread)
