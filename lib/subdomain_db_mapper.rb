@@ -196,9 +196,13 @@ module SubdomainDbMapper
     end
 
     def self.change_s3_teamer(tenant)
-      ActiveStorage::Blob.service.client.client.config.credentials.instance_variable_set(:@access_key_id, `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_ACCESS_KEY_ID`)
-      ActiveStorage::Blob.service.client.client.config.credentials.instance_variable_set(:@secret_access_key, `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_SECRET_ACCESS_KEY`)
-      ActiveStorage::Blob.service.set_bucket(`cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_BUCKET`)
+      if Rails.env.production?
+        ActiveStorage::Blob.service.client.client.config.credentials.instance_variable_set(:@access_key_id, `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_ACCESS_KEY_ID`)
+        ActiveStorage::Blob.service.bucket.client.config.access_key_id = `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_ACCESS_KEY_ID`
+        ActiveStorage::Blob.service.client.client.config.credentials.instance_variable_set(:@secret_access_key, `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_SECRET_ACCESS_KEY`)
+        ActiveStorage::Blob.service.bucket.client.config.secret_access_key = `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_SECRET_ACCESS_KEY`
+        ActiveStorage::Blob.service.bucket.instance_variable_set(:@name, `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_BUCKET`)
+      end
     end
   end
 
