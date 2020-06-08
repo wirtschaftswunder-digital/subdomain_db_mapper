@@ -109,6 +109,7 @@ module SubdomainDbMapper
     end
 
     def self.change_db(tenant)
+      JugendreisenBase rescue nil #not initialized by Rails in some apps - like destinatiin, customercenter
       if Rails.env.development?
         db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase]['development']
       else
