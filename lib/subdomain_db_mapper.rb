@@ -70,7 +70,7 @@ module SubdomainDbMapper
         self.change_db_kc(tenant)
         self.change_db_teamer(tenant)
         self.change_s3(tenant) if defined?(Paperclip)
-        self.change_s3_teamer(tenant) if defined?(TeamerBase.is_a?(Class))
+        self.change_s3_teamer(tenant) if defined?(TeamerBase)
         Thread.current[:subdomain] = tenant
       end
       logger.debug(Thread.current[:subdomain])
@@ -123,7 +123,7 @@ module SubdomainDbMapper
               "password"=> `cat /home/app/webapp/config/env/#{tenant}_PASSWORD`,
               "host"=> `cat /home/app/webapp/config/env/#{tenant}_HOST`}
       end
-      if defined?(JugendreisenBase.is_a?(Class))
+      if defined?(JugendreisenBase)
         JugendreisenBase.establish_connection(db)
       else
         ActiveRecord::Base.establish_connection(db)
@@ -131,6 +131,7 @@ module SubdomainDbMapper
     end
 
     def self.change_db_kc(tenant)
+      KundencenterBase rescue nil #not initialized by Rails in some apps - like destinatiin, customercenter
       if Rails.env.development?
         db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)["#{tenant.downcase}_db_org"]["development"]
       else
@@ -148,12 +149,12 @@ module SubdomainDbMapper
       if defined?(Masken)
         MultiTenant::KundencenterBase.establish_connection db
       else
-        KundencenterBase.establish_connection db if defined?(KundencenterBase.is_a?(Class))
+        KundencenterBase.establish_connection db if defined?(KundencenterBase)
       end
     end
 
     def self.change_db_teamer(tenant)
-      if defined?(TeamerBase.is_a?(Class))
+      if defined?(TeamerBase)
         if Rails.env.development?
           db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)["#{tenant.downcase}_db_teamer"]['development']
         else
