@@ -70,7 +70,7 @@ module SubdomainDbMapper
         self.change_db_kc(tenant)
         self.change_db_teamer(tenant)
         self.change_s3(tenant) if defined?(Paperclip)
-        self.change_s3_teamer(tenant) if defined?(TeamerBase)
+        self.change_s3_teamer(tenant) if defined?(TeamerBase.is_a?(Class))
         Thread.current[:subdomain] = tenant
       end
       logger.debug(Thread.current[:subdomain])
@@ -123,7 +123,7 @@ module SubdomainDbMapper
               "password"=> `cat /home/app/webapp/config/env/#{tenant}_PASSWORD`,
               "host"=> `cat /home/app/webapp/config/env/#{tenant}_HOST`}
       end
-      if defined?(JugendreisenBase)
+      if defined?(JugendreisenBase.is_a?(Class))
         JugendreisenBase.establish_connection(db)
       else
         ActiveRecord::Base.establish_connection(db)
@@ -148,12 +148,12 @@ module SubdomainDbMapper
       if defined?(Masken)
         MultiTenant::KundencenterBase.establish_connection db
       else
-        KundencenterBase.establish_connection db if defined?(KundencenterBase)
+        KundencenterBase.establish_connection db if defined?(KundencenterBase.is_a?(Class))
       end
     end
 
     def self.change_db_teamer(tenant)
-      if defined?(TeamerBase)
+      if defined?(TeamerBase.is_a?(Class))
         if Rails.env.development?
           db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)["#{tenant.downcase}_db_teamer"]['development']
         else
@@ -197,6 +197,9 @@ module SubdomainDbMapper
 
     def self.change_s3_teamer(tenant)
       if Rails.env.production?
+        #Aws.config.update({
+        #  credentials: Aws::Credentials.new(`cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_ACCESS_KEY_ID`, `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_SECRET_ACCESS_KEY`)
+        #})
         ActiveStorage::Blob.service.client.client.config.credentials.instance_variable_set(:@access_key_id, `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_ACCESS_KEY_ID`)
         ActiveStorage::Blob.service.bucket.client.config.access_key_id = `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_ACCESS_KEY_ID`
         ActiveStorage::Blob.service.client.client.config.credentials.instance_variable_set(:@secret_access_key, `cat /home/app/webapp/config/env/#{tenant}_TEAMER_S3_SECRET_ACCESS_KEY`)
