@@ -170,7 +170,11 @@ module SubdomainDbMapper
                 "password"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_PASSWORD`,
                 "host"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_HOST`}
         end
-        ApplicationRecord.establish_connection(db)
+        if defined?(TeamerApp) or defined?(TeamManagerApp)
+          ApplicationRecord.establish_connection(db)
+        else
+          TeamerBase.establish_connection(db)
+        end
       end
     end
 
