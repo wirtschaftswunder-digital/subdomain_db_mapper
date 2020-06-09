@@ -62,7 +62,13 @@ module SubdomainDbMapper
 
     def self.switch(tenant)
       tenant = tenant.force_encoding("UTF-8").parameterize.upcase
-      tenant_connection = ActiveRecord::Base.connection_config[:database].try(:include?, subdomain_db_mappping(tenant))
+      JugendreisenBase rescue nil #not initialized by Rails in some apps - like destination, customercenter
+      if defined?(JugendreisenBase)
+        main_db = JugendreisenBase.connection_config[:database]
+      else
+        main_db = ActiveRecord::Base.connection_config[:database]
+      end
+      tenant_connection = main_db.try(:include?, subdomain_db_mappping(tenant))
       tenant_thread = Thread.current[:subdomain] == tenant
       if not (tenant_connection and tenant_thread)
         self.change_session(tenant)
@@ -109,7 +115,6 @@ module SubdomainDbMapper
     end
 
     def self.change_db(tenant)
-      JugendreisenBase rescue nil #not initialized by Rails in some apps - like destinatiin, customercenter
       if Rails.env.development?
         db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)[tenant.downcase]['development']
       else
@@ -155,6 +160,7 @@ module SubdomainDbMapper
     end
 
     def self.change_db_teamer(tenant)
+      TeamerBase rescue nil #not initialized by Rails in some apps
       if defined?(TeamerBase)
         if Rails.env.development?
           db = YAML::load(ERB.new(File.read(Rails.root.join("config","database.yml"))).result)["#{tenant.downcase}_db_teamer"]['development']
