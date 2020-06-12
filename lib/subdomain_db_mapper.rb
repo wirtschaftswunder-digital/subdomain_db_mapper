@@ -213,16 +213,18 @@ module SubdomainDbMapper
     end
 
     def self.change_s3_kc(tenant)
-      CarrierWave.configure do |config|
-        config.aws_bucket = `cat /home/app/webapp/config/env/#{tenant}_KC_BUCKET`
-        config.aws_acl = 'private'
-        config.aws_credentials = {
-          access_key_id:     `cat /home/app/webapp/config/env/#{tenant}_KC_ACCESS_KEY_ID`,
-          secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_KC_SECRET_ACCESS_KEY`,
-          region:            `cat /home/app/webapp/config/env/#{tenant}_KC_REGION`,
-          stub_responses:    Rails.env.test? # Optional, avoid hitting S3 actual during tests
-        }
-        config.storage = :aws
+      defined?(CarrierWave)
+        CarrierWave.configure do |config|
+          config.aws_bucket = `cat /home/app/webapp/config/env/#{tenant}_KC_BUCKET`
+          config.aws_acl = 'private'
+          config.aws_credentials = {
+            access_key_id:     `cat /home/app/webapp/config/env/#{tenant}_KC_ACCESS_KEY_ID`,
+            secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_KC_SECRET_ACCESS_KEY`,
+            region:            `cat /home/app/webapp/config/env/#{tenant}_KC_REGION`,
+            stub_responses:    Rails.env.test? # Optional, avoid hitting S3 actual during tests
+          }
+          config.storage = :aws
+        end
       end
     end
 
