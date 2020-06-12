@@ -76,11 +76,16 @@ module SubdomainDbMapper
         self.change_db_kc(tenant)
         self.change_db_teamer(tenant)
         self.change_s3(tenant) if defined?(Paperclip)
+        self.change_s3_kc(tenant) if defined?(KundencenterBase)
         self.change_s3_teamer(tenant)
         Thread.current[:subdomain] = tenant
       end
       logger.debug(Thread.current[:subdomain])
-      logger.debug(ActiveRecord::Base.connection_config[:database])
+      if defined?(JugendreisenBase)
+        logger.debug(JugendreisenBase.connection_config[:database])
+      else
+        logger.debug(ActiveRecord::Base.connection_config[:database])
+      end
     end
 
     private
@@ -176,11 +181,11 @@ module SubdomainDbMapper
                 "password"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_PASSWORD`,
                 "host"=> `cat /home/app/webapp/config/env/#{tenant}_TEAMER_HOST`}
         end
-        #if defined?(TeamerApp) or defined?(TeamManagerApp)
-        #  ApplicationRecord.establish_connection(db)
-        #else
-          TeamerBase.establish_connection(db)
-        #end
+        if defined?(TeamerApp) or defined?(TeamManagerApp)
+          ApplicationRecord.establish_connection(db)
+        else
+         TeamerBase.establish_connection(db)
+        end
       end
     end
 
@@ -190,21 +195,35 @@ module SubdomainDbMapper
         s3_protocol: :https,
         preserve_files: true,
         s3_credentials: {
-            bucket: `cat /home/app/webapp/config/env/#{tenant}_FILES_BUCKET`,
-            access_key_id: `cat /home/app/webapp/config/env/#{tenant}_FILES_ACCESS_KEY_ID`,
-            secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_FILES_SECRET_ACCESS_KEY`,
-            region: `cat /home/app/webapp/config/env/#{tenant}_FILES_REGION`,
-            s3_host_name: `cat /home/app/webapp/config/env/#{tenant}_FILES_HOST`
+            bucket: `cat /home/app/webapp/config/env/#{tenant}_IMAGES_BUCKET`,
+            access_key_id: `cat /home/app/webapp/config/env/#{tenant}_IMAGES_ACCESS_KEY_ID`,
+            secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_IMAGES_SECRET_ACCESS_KEY`,
+            region: `cat /home/app/webapp/config/env/#{tenant}_IMAGES_REGION`,
+            s3_host_name: `cat /home/app/webapp/config/env/#{tenant}_IMAGES_HOST`
         },
         s3_options: {
             force_path_style: true
         },
-        s3_region: `cat /home/app/webapp/config/env/#{tenant}_FILES_REGION`,
+        s3_region: `cat /home/app/webapp/config/env/#{tenant}_IMAGES_REGION`,
         s3_headers: {
           'Cache-Control' => 'max-age=3153600',
           'Expires' => 2.years.from_now.httpdate
         }
       })
+    end
+
+    def self.change_s3_kc(tenant)
+      CarrierWave.configure do |config|
+        config.aws_bucket = `cat /home/app/webapp/config/env/#{tenant}_KC_BUCKET`
+        config.aws_acl = 'private'
+        config.aws_credentials = {
+          access_key_id:     `cat /home/app/webapp/config/env/#{tenant}_KC_ACCESS_KEY_ID`,
+          secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_KC_SECRET_ACCESS_KEY`,
+          region:            `cat /home/app/webapp/config/env/#{tenant}_KC_REGION`,
+          stub_responses:    Rails.env.test? # Optional, avoid hitting S3 actual during tests
+        }
+        config.storage = :aws
+      end
     end
 
     def self.change_s3_teamer(tenant)
