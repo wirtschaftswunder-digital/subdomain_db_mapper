@@ -102,21 +102,34 @@ module SubdomainDbMapper
         Rails.application.config.secret_key_base = "fake_dev_secret_#{tenant}"
       else
         Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
-        if defined?(Masken)
-          Masken::Application.config.secret_token = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
         elsif defined?(FrontendAgencyApp)
           Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_fe_agency_session', tld_length: 2, secure: true
-          Rails.application.config.secret_key_bas = `cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`
+          Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`
+          Rails.application.key_generator.instance_variable_set(:@key_generator,
+            ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`, iterations: 1000)
+          )
         elsif defined?(TeamerApp)
           Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_teamer_session', tld_length: 2, secure: true
-          Rails.application.config.secret_key_bas = `cat /home/app/webapp/config/env/#{tenant}_TEAMER_KEY_BASE`
+          Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_TEAMER_KEY_BASE`
+          Rails.application.key_generator.instance_variable_set(:@key_generator,
+            ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`, iterations: 1000)
+          )
         elsif defined?(Kundencenter)
           Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_customer_session', tld_length: 2, secure: true
-          Rails.application.config.secret_key_bas = `cat /home/app/webapp/config/env/#{tenant}_CUSTOMER_KEY_BASE`
+          Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_CUSTOMER_KEY_BASE`
+          Rails.application.key_generator.instance_variable_set(:@key_generator,
+            ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`, iterations: 1000)
+          )
         else
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
+          Rails.application.key_generator.instance_variable_set(:@key_generator,
+            ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`, iterations: 1000)
+          )
         end
       end
+      env_config = Rails.application.env_config
+      env_config["action_dispatch.secret_key_base"] = Rails.application.config.secret_key_base
+      Rails.application.instance_variable_set(:@app_env_config, env_config)
     end
 
     def self.change_db(tenant)
