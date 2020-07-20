@@ -208,7 +208,7 @@ module SubdomainDbMapper
           'Expires' => 2.years.from_now.httpdate
         }
       })
-      if defined(Aws)
+      if defined?(Aws)
         Aws.config.update({
           force_path_style: true,
           credentials: Aws::Credentials.new(`cat /home/app/webapp/config/env/#{tenant}_IMAGES_ACCESS_KEY_ID`, `cat /home/app/webapp/config/env/#{tenant}_IMAGES_SECRET_ACCESS_KEY`),
