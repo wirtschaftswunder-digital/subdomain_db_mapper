@@ -29,6 +29,9 @@ module SubdomainDbMapper
     end
 
     def check_authorization
+      logger.debug 'from gem'
+      logger.debug session.inspect
+      logger.debug cookies.inspect
       id = session[:id] || (cookies.encrypted['id'] unless defined?(Masken))
       if id.blank?
         not_authenticated unless Anbieter.find_by_key(params[:key]).present? #API requests
@@ -129,6 +132,7 @@ module SubdomainDbMapper
       end
       env_config = Rails.application.env_config
       env_config["action_dispatch.secret_key_base"] = Rails.application.config.secret_key_base
+      Rails.application.secrets[:secret_key_base] = Rails.application.config.secret_key_base
       Rails.application.instance_variable_set(:@app_env_config, env_config)
     end
 
