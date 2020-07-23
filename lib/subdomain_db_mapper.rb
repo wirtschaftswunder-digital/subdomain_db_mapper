@@ -223,6 +223,14 @@ module SubdomainDbMapper
           'Expires' => 2.years.from_now.httpdate
         }
       })
+      if defined?(Aws)
+        Aws.config.update({
+          force_path_style: true,
+          credentials: Aws::Credentials.new(`cat /home/app/webapp/config/env/#{tenant}_IMAGES_ACCESS_KEY_ID`, `cat /home/app/webapp/config/env/#{tenant}_IMAGES_SECRET_ACCESS_KEY`),
+          region: `cat /home/app/webapp/config/env/#{tenant}_IMAGES_REGION`
+        })
+        ENV['IMAGES_BUCKET'] = `cat /home/app/webapp/config/env/#{tenant}_IMAGES_BUCKET`
+      end
     end
 
     def self.change_s3_kc(tenant)
