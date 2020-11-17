@@ -133,6 +133,9 @@ module SubdomainDbMapper
       env_config = Rails.application.env_config
       env_config["action_dispatch.secret_key_base"] = Rails.application.config.secret_key_base
       Rails.application.secrets[:secret_key_base] = Rails.application.config.secret_key_base
+      env_config["action_dispatch.encrypted_signed_cookie_salt"] = `cat /home/app/webapp/config/env/#{tenant}_SIGNED_COOKIE_SALT`
+      Rails.application.config.action_dispatch.encrypted_signed_cookie_salt = `cat /home/app/webapp/config/env/#{tenant}_SIGNED_COOKIE_SALT`
+      ENV["SECRET_KEY_BASE"] = Rails.application.config.secret_key_base
       Rails.application.instance_variable_set(:@app_env_config, env_config)
     end
 
