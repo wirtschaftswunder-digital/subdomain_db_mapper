@@ -14,18 +14,24 @@ module SubdomainDbMapper
     end
 
     def self.included(klass)
+      klass.before_action :change_domains
       klass.before_action :change_db
       klass.before_action :check_authorization
+    end
+
+    def change_domains
+      if defined?(Masken) && request.subdomains.present?
+        ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
+        ENV["SESSION_DOMAIN"] = "#{request.domain(2)}"
+      elsif request.subdomains.present?
+        Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
+        ENV["SESSION_DOMAIN"] = "#{request.domain(2)}"
+      end
     end
 
     def change_db
       tenant = request.subdomains(0).first
       SubdomainDbMapper::Database.switch(tenant) unless Rails.env.development? && tenant.blank?
-      if defined?(Masken) && request.subdomains.present?
-        ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
-      elsif request.subdomains.present?
-        Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
-      end
     end
 
     def check_authorization
