@@ -23,9 +23,11 @@ module SubdomainDbMapper
       if defined?(Masken) && request.subdomains.present?
         ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
         ENV["SESSION_DOMAIN"] = "#{request.domain(2)}"
+        ENV["SESSION_KEY"] = "_campsdigital_session"
       elsif request.subdomains.present?
         Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
         ENV["SESSION_DOMAIN"] = "#{request.domain(2)}"
+        ENV["SESSION_KEY"] = "_campsdigital_session"
       end
     end
 
