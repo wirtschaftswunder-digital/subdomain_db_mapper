@@ -14,24 +14,16 @@ module SubdomainDbMapper
     end
 
     def self.included(klass)
-      klass.before_action :change_domains
       klass.before_action :change_db
       klass.before_action :check_authorization
     end
 
-    def change_domains
-      if defined?(Masken) && request.subdomains.present?
-        ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
-        ENV["SESSION_DOMAIN"] = "#{request.domain(2)}"
-      elsif request.subdomains.present?
-        Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
-        ENV["SESSION_DOMAIN"] = "#{request.domain(2)}"
-      end
-    end
-
     def change_db
       tenant = request.subdomains(0).first
-      SubdomainDbMapper::Database.switch(tenant) unless Rails.env.development? && tenant.blank?
+      unless Rails.env.development? && tenant.blank?
+        change_domains
+        SubdomainDbMapper::Database.switch(tenant)
+      end
     end
 
     def check_authorization
@@ -63,6 +55,17 @@ module SubdomainDbMapper
         tenant = request.subdomains(0).first.force_encoding("UTF-8").parameterize.upcase
         ENV['CRYPT_KEEPER_KEY'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_KEY`
         ENV['CRYPT_KEEPER_SALT'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_SALT`
+      end
+    end
+
+    def change_domains
+      if defined?(Masken) && request.subdomains.present?
+        ENV["DOMAIN"] = "#{request.protocol}#{request.domain(2)}"
+        ENV["SESSION_DOMAIN"] = "#{request.domain(2)}"
+      elsif request.subdomains.present?
+        Rails.configuration.x.domain = "#{request.protocol}#{request.domain(2)}"
+        ENV["SESSION_DOMAIN"] = "#{request.domain(2)}"
+        ENV["SESSION_KEY"] = '_campsdigital_session'
       end
     end
   end
@@ -110,39 +113,42 @@ module SubdomainDbMapper
       if Rails.env.development?
         Rails.application.config.secret_key_base = "fake_dev_secret_#{tenant}"
       else
-        Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
         if defined?(FrontendAgencyApp)
-          Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_fe_agency_session', tld_length: 2, secure: true
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`
-          Rails.application.key_generator.instance_variable_set(:@key_generator,
-            ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`, iterations: 1000)
-          )
         elsif defined?(TeamerApp)
-          Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_teamer_session', tld_length: 2, secure: true
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_TEAMER_KEY_BASE`
-          Rails.application.key_generator.instance_variable_set(:@key_generator,
-            ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_TEAMER_KEY_BASE`, iterations: 1000)
-          )
         elsif defined?(Kundencenter)
-          Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_customer_session', tld_length: 2, secure: true
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_CUSTOMER_KEY_BASE`
-          Rails.application.key_generator.instance_variable_set(:@key_generator,
-            ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_CUSTOMER_KEY_BASE`, iterations: 1000)
-          )
         else
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
-          Rails.application.key_generator.instance_variable_set(:@key_generator,
-            ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`, iterations: 1000)
-          )
         end
       end
       env_config = Rails.application.env_config
       env_config["action_dispatch.secret_key_base"] = Rails.application.config.secret_key_base
       Rails.application.secrets[:secret_key_base] = Rails.application.config.secret_key_base
-      env_config["action_dispatch.encrypted_signed_cookie_salt"] = `cat /home/app/webapp/config/env/#{tenant}_SIGNED_COOKIE_SALT`
-      Rails.application.config.action_dispatch.encrypted_signed_cookie_salt = `cat /home/app/webapp/config/env/#{tenant}_SIGNED_COOKIE_SALT`
       ENV["SECRET_KEY_BASE"] = Rails.application.config.secret_key_base
       Rails.application.instance_variable_set(:@app_env_config, env_config)
+      if defined?(FrontendAgencyApp)
+        Rails.application.key_generator.instance_variable_set(:@key_generator,
+        ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_FEAGENCY_KEY_BASE`, iterations: 1000)
+        )
+        Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_fe_agency_session', tld_length: 2, secure: true
+      elsif defined?(TeamerApp)
+        Rails.application.key_generator.instance_variable_set(:@key_generator,
+        ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_TEAMER_KEY_BASE`, iterations: 1000)
+        )
+        Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_teamer_session', tld_length: 2, secure: true
+      elsif defined?(Kundencenter)
+        Rails.application.key_generator.instance_variable_set(:@key_generator,
+        ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_CUSTOMER_KEY_BASE`, iterations: 1000)
+        )
+        Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: '_customer_session', tld_length: 2, secure: true
+      else
+        Rails.application.key_generator.instance_variable_set(:@key_generator,
+        ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`, iterations: 1000)
+        )
+        Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
+      end
     end
 
     def self.change_db(tenant)
