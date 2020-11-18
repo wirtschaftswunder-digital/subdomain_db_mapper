@@ -130,8 +130,11 @@ module SubdomainDbMapper
             ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_CUSTOMER_KEY_BASE`, iterations: 1000)
           )
         else
-          #Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
+          old_session = session.dup.to_hash
           Rails.application.config.secret_key_base = `cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`
+          Rails.application.key_generator.instance_variable_set(:@key_generator,
+          ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`, iterations: 1000)
+          )
           env_config = Rails.application.env_config
           env_config["action_dispatch.secret_key_base"] = Rails.application.config.secret_key_base
           Rails.application.secrets[:secret_key_base] = Rails.application.config.secret_key_base
@@ -139,9 +142,14 @@ module SubdomainDbMapper
           Rails.application.config.action_dispatch.encrypted_signed_cookie_salt = `cat /home/app/webapp/config/env/#{tenant}_SIGNED_COOKIE_SALT`
           ENV["SECRET_KEY_BASE"] = Rails.application.config.secret_key_base
           Rails.application.instance_variable_set(:@app_env_config, env_config)
-          Rails.application.key_generator.instance_variable_set(:@key_generator,
-            ActiveSupport::KeyGenerator.new(`cat /home/app/webapp/config/env/#{tenant}_KEY_BASE`, iterations: 1000)
-          )
+          Rails.application.config.session_store :cookie_store, domain: ENV["SESSION_DOMAIN"], key: ENV["SESSION_KEY"], tld_length: 2, secure: true
+
+          reset_session
+          old_session.each_pair do |k, v|
+            session[k.to_sym] = v
+          end
+
+
         end
       end
     end
