@@ -27,9 +27,6 @@ module SubdomainDbMapper
     end
 
     def check_authorization
-      logger.debug 'from gem'
-      logger.debug session.inspect
-      logger.debug cookies.inspect
       id = cookies.encrypted['id']
       if id.blank?
         not_authenticated unless Anbieter.find_by_key(params[:key]).present? #API requests
