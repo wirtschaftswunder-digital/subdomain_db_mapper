@@ -20,7 +20,7 @@ module SubdomainDbMapper
 
     def change_db
       tenant = request.subdomains(0).first
-      unless Rails.env.development? && tenant.blank?
+      unless Rails.env.test? or (Rails.env.development? && tenant.blank?)
         change_domains
         SubdomainDbMapper::Database.switch(tenant)
       end
