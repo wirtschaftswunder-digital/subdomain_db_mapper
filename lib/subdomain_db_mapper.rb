@@ -48,8 +48,13 @@ module SubdomainDbMapper
     def set_cryptkeeper
       if request.subdomains.present?
         tenant = request.subdomains(0).first.force_encoding("UTF-8").parameterize.upcase
-        ENV['CRYPT_KEEPER_KEY'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_KEY`
-        ENV['CRYPT_KEEPER_SALT'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_SALT`
+        if defined?(GroudiCrmBase)
+          ENV['CRYPT_KEEPER_KEY'] = `cat /home/app/webapp/config/env/#{tenant}_GROUDI_CRM_CRYPT_KEEPER_KEY`
+          ENV['CRYPT_KEEPER_SALT'] = `cat /home/app/webapp/config/env/#{tenant}_GROUDI_CRM_CRYPT_KEEPER_SALT`
+        else
+          ENV['CRYPT_KEEPER_KEY'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_KEY`
+          ENV['CRYPT_KEEPER_SALT'] = `cat /home/app/webapp/config/env/#{tenant}_CRYPT_KEEPER_SALT`
+        end
       end
     end
 
@@ -80,6 +85,7 @@ module SubdomainDbMapper
         self.change_db(tenant)
         self.change_db_kc(tenant)
         self.change_db_teamer(tenant)
+        self.change_db_groudicrm(tenant)
         self.change_s3(tenant) if defined?(Paperclip)
         self.change_s3_kc(tenant) if defined?(Kundencenter)
         self.change_s3_teamer(tenant)
@@ -168,6 +174,21 @@ module SubdomainDbMapper
           ApplicationRecord.establish_connection(db)
         else
          TeamerBase.establish_connection(db)
+        end
+      end
+    end
+
+    def self.change_db_groudicrm(tenant)
+      GroudiCrmBase rescue nil #not initialized by Rails in some apps
+      if defined?(GroudiCrmBase)
+        unless Rails.env.development?
+          db = {"adapter"=>"postgresql",
+                "port"=>5432,
+                "database"=> `cat /home/app/webapp/config/env/#{tenant}_GROUDI_CRM_DATABASE`,
+                "username"=> `cat /home/app/webapp/config/env/#{tenant}_GROUDI_CRM_USERNAME`,
+                "password"=> `cat /home/app/webapp/config/env/#{tenant}_GROUDI_CRM_PASSWORD`,
+                "host"=> `cat /home/app/webapp/config/env/#{tenant}_GROUDI_CRM_HOST`}
+          GroudiCrmBase.establish_connection(db)
         end
       end
     end
