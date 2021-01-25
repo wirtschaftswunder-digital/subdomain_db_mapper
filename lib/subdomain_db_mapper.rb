@@ -28,7 +28,7 @@ module SubdomainDbMapper
 
     def check_authorization
       id = cookies.encrypted['id']
-      if id.blank?
+      if id.blank? or id.kind_of?(Hash)
         not_authenticated unless Anbieter.find_by_key(params[:key]).present? #API requests
       else
         @anbieter = User.find(id).anbieter
