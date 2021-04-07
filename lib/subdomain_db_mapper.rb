@@ -74,6 +74,8 @@ module SubdomainDbMapper
     def self.switch(tenant)
       tenant = tenant.force_encoding("UTF-8").parameterize.upcase
       JugendreisenBase rescue nil #not initialized by Rails in some apps - like destination, customercenter
+      if defined?(TeamerApp) or defined?(TeamManagerApp)
+        main_db = ActiveRecord::Base.connection_config[:database]
       if defined?(JugendreisenBase)
         main_db = JugendreisenBase.connection_config[:database]
       else
@@ -173,7 +175,7 @@ module SubdomainDbMapper
         if defined?(TeamerApp) or defined?(TeamManagerApp)
           ApplicationRecord.establish_connection(db)
         else
-         TeamerBase.establish_connection(db)
+          TeamerBase.establish_connection(db)
         end
       end
     end
