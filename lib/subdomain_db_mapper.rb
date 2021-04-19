@@ -76,10 +76,10 @@ module SubdomainDbMapper
       JugendreisenBase rescue nil #not initialized by Rails in some apps - like destination, customercenter
       if defined?(TeamerApp) or defined?(TeamManagerApp)
         main_db = ActiveRecord::Base.connection_config[:database]
-      elsif defined?(JugendreisenBase)
-        main_db = JugendreisenBase.connection_config[:database]
       elsif defined?(GroudiCrmBase)
         main_db = GroudiCrmBase.connection_config[:database]
+      elsif defined?(JugendreisenBase)
+        main_db = JugendreisenBase.connection_config[:database]
       else
         main_db = ActiveRecord::Base.connection_config[:database]
       end
