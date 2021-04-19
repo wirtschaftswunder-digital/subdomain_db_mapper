@@ -77,7 +77,7 @@ module SubdomainDbMapper
       if defined?(TeamerApp) or defined?(TeamManagerApp)
         main_db = ActiveRecord::Base.connection_config[:database]
       elsif defined?(GroudiCrmBase)
-        main_db = GroudiCrmBase.connection_config[:database]
+        main_db = ApplicationRecord.connection_config[:database]
       elsif defined?(JugendreisenBase)
         main_db = JugendreisenBase.connection_config[:database]
       else
@@ -192,7 +192,7 @@ module SubdomainDbMapper
                 "username"=> `cat /home/app/webapp/config/env/#{tenant}_GROUDI_CRM_USERNAME`,
                 "password"=> `cat /home/app/webapp/config/env/#{tenant}_GROUDI_CRM_PASSWORD`,
                 "host"=> `cat /home/app/webapp/config/env/#{tenant}_GROUDI_CRM_HOST`}
-          GroudiCrmBase.establish_connection(db)
+          ApplicationRecord.establish_connection(db)
         end
       end
     end
