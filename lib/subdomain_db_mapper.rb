@@ -237,7 +237,6 @@ module SubdomainDbMapper
             provider: 'AWS',
             aws_access_key_id: `cat /home/app/webapp/config/env/#{tenant}_KC_ACCESS_KEY_ID`,
             aws_secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_KC_SECRET_ACCESS_KEY`,
-            use_iam_profile: true,
             region: `cat /home/app/webapp/config/env/#{tenant}_KC_REGION`
           }
           config.fog_directory  = `cat /home/app/webapp/config/env/#{tenant}_KC_BUCKET`
