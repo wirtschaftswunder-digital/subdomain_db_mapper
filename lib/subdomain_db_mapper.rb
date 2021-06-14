@@ -231,6 +231,8 @@ module SubdomainDbMapper
     def self.change_s3_kc(tenant)
       if defined?(Kundencenter) or defined?(TeamerApp)
         CarrierWave.configure do |config|
+          config.storage = :fog,
+          config.fog_provider = 'fog/aws',
           config.fog_credentials = {
             provider: 'AWS',
             aws_access_key_id: `cat /home/app/webapp/config/env/#{tenant}_KC_ACCESS_KEY_ID`,
