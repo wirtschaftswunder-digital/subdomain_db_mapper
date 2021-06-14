@@ -231,15 +231,16 @@ module SubdomainDbMapper
     def self.change_s3_kc(tenant)
       if defined?(Kundencenter) or defined?(TeamerApp)
         CarrierWave.configure do |config|
-          config.aws_bucket = `cat /home/app/webapp/config/env/#{tenant}_KC_BUCKET`
-          config.aws_acl = 'private'
-          config.aws_credentials = {
-            access_key_id:     `cat /home/app/webapp/config/env/#{tenant}_KC_ACCESS_KEY_ID`,
-            secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_KC_SECRET_ACCESS_KEY`,
-            region:            `cat /home/app/webapp/config/env/#{tenant}_KC_REGION`,
-            stub_responses:    Rails.env.test? # Optional, avoid hitting S3 actual during tests
+          config.fog_credentials = {
+            provider: 'AWS',
+            aws_access_key_id: `cat /home/app/webapp/config/env/#{tenant}_KC_ACCESS_KEY_ID`,
+            aws_secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_KC_SECRET_ACCESS_KEY`,
+            use_iam_profile: true,
+            region: `cat /home/app/webapp/config/env/#{tenant}_KC_REGION`
           }
-          config.storage = :aws
+          config.fog_directory  = `cat /home/app/webapp/config/env/#{tenant}_KC_BUCKET`
+          config.fog_public = false
+          config.fog_attributes = { cache_control: "public, max-age=#{365.days.to_i}" }
         end
       end
     end
