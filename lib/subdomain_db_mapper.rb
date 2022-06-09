@@ -230,19 +230,22 @@ module SubdomainDbMapper
 
     def self.change_s3_kc(tenant)
       if defined?(Kundencenter) or defined?(TeamerApp)
+        fog_credentials = {
+          provider: 'AWS',
+          aws_access_key_id: `cat /home/app/webapp/config/env/#{tenant}_KC_ACCESS_KEY_ID`,
+          aws_secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_KC_SECRET_ACCESS_KEY`,
+          region: `cat /home/app/webapp/config/env/#{tenant}_KC_REGION`
+        }
         CarrierWave.configure do |config|
           config.storage = :fog,
           config.fog_provider = 'fog/aws',
-          config.fog_credentials = {
-            provider: 'AWS',
-            aws_access_key_id: `cat /home/app/webapp/config/env/#{tenant}_KC_ACCESS_KEY_ID`,
-            aws_secret_access_key: `cat /home/app/webapp/config/env/#{tenant}_KC_SECRET_ACCESS_KEY`,
-            region: `cat /home/app/webapp/config/env/#{tenant}_KC_REGION`
-          }
+          config.fog_credentials = fog_credentials
           config.fog_directory  = `cat /home/app/webapp/config/env/#{tenant}_KC_BUCKET`
           config.fog_public = false
           config.fog_attributes = { cache_control: "public, max-age=#{365.days.to_i}" }
         end
+        AvatarUploader.fog_directory = `cat /home/app/webapp/config/env/#{tenant}_KC_BUCKET`
+        AvatarUploader.fog_credentials = fog_credentials
       end
     end
 
