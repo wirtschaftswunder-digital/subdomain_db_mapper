@@ -21,8 +21,11 @@ module SubdomainDbMapper
     def change_db
       tenant = request.subdomains(0).first
       unless Rails.env.test? or (Rails.env.development? && tenant.blank?)
-        change_domains
-        SubdomainDbMapper::Database.switch(tenant)
+        tenant = tenant.force_encoding("UTF-8").parameterize.upcase
+        if ['DEV','MY','BDKJ','FORSCHERFREUNDE','KCA','YA','CFF'].include?(tenant)
+          change_domains
+          SubdomainDbMapper::Database.switch(tenant)
+        end
       end
     end
 
@@ -72,7 +75,6 @@ module SubdomainDbMapper
   class Database < ActiveRecord::Base
 
     def self.switch(tenant)
-      tenant = tenant.force_encoding("UTF-8").parameterize.upcase
       JugendreisenBase rescue nil #not initialized by Rails in some apps - like destination, customercenter
       if defined?(TeamerApp) or defined?(TeamManagerApp)
         main_db = ActiveRecord::Base.connection_config[:database]
