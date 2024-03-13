@@ -132,7 +132,7 @@ module SubdomainDbMapper
       if defined?(JugendreisenBase)
         JugendreisenBase.establish_connection(db)
       else
-        ActiveRecord::Base.establish_connection(db)
+        ActiveRecord::Base.establish_connection(db) unless db['database'].blank?
       end
     end
 
