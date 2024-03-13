@@ -25,6 +25,8 @@ module SubdomainDbMapper
         if ['DEV','MY','BDKJ','BJA','FORSCHERFREUNDE','KCA','YA','CFF','SPRACHCAMP-ALLGAEU','KIRSCHKAMPERHOF','FOX-SUMMIT'].include?(tenant)
           change_domains
           SubdomainDbMapper::Database.switch(tenant)
+        else
+          raise ArgumentError, "Subdomain '#{tenant}' does not map to any database."
         end
       end
     end
