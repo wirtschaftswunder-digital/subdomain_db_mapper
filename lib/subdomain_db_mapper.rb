@@ -22,7 +22,7 @@ module SubdomainDbMapper
       tenant = request.subdomains(0).first
       unless Rails.env.test? or (Rails.env.development? && tenant.blank?)
         tenant = tenant.force_encoding("UTF-8").parameterize.upcase
-        if ['DEV','MY','BDKJ','BJA','FORSCHERFREUNDE','KCA','YA','CFF','SPRACHCAMP-ALLGAEU','KIRSCHKAMPERHOF','FOX-SUMMIT'].include?(tenant)
+        if ['DEV','MY','BDKJ','BJA','FORSCHERFREUNDE','KCA','YA','CFF','SPRACHCAMP-ALLGAEU','KIRSCHKAMPERHOF','FOX-SUMMIT',"OSKAR-LERNT-ENGLISCH"].include?(tenant)
           change_domains
           SubdomainDbMapper::Database.switch(tenant)
         else
