@@ -87,11 +87,7 @@ module SubdomainDbMapper
       else
         main_db = ActiveRecord::Base.connection_config[:database]
       end
-      mapped_database = subdomain_db_mappping(tenant)
-      if tenant == 'STAGING-DEMO' && mapped_database.blank?
-        raise Error, "Missing database configuration for #{tenant}"
-      end
-      tenant_connection = main_db.try(:include?, mapped_database)
+      tenant_connection = main_db.try(:include?, subdomain_db_mappping(tenant))
       tenant_thread = Thread.current[:subdomain] == tenant
       if not (tenant_connection and tenant_thread)
         self.change_db(tenant)
@@ -134,9 +130,6 @@ module SubdomainDbMapper
               "username"=> `cat /home/app/webapp/config/env/#{tenant}_USERNAME`,
               "password"=> `cat /home/app/webapp/config/env/#{tenant}_PASSWORD`,
               "host"=> `cat /home/app/webapp/config/env/#{tenant}_HOST`}
-      end
-      if tenant == 'STAGING-DEMO' && !Rails.env.development? && %w[database username password host].any? { |key| db[key].blank? }
-        raise Error, "Incomplete database configuration for #{tenant}"
       end
       if defined?(JugendreisenBase)
         JugendreisenBase.establish_connection(db)
